@@ -27,7 +27,7 @@ bool PinocchioLinkUpdater::getLinkTransforms(const std::string &link_name, Ogre:
                                              Ogre::Quaternion &visual_orientation, Ogre::Vector3 &collision_position,
                                              Ogre::Quaternion &collision_orientation) const {
   if (model_.existFrame(link_name)) {
-    pinocchio::FrameIndex frameId = model_.getFrameId(link_name);
+    pinocchio::FrameIndex frameId = model_.getFrameId(link_name, pinocchio::FrameType::BODY);
     const Eigen::Vector3d &translation = data_.oMf[frameId].translation();
     Eigen::Quaterniond quaternion(data_.oMf[frameId].rotation());
     Ogre::Vector3 position(translation[0], translation[1], translation[2]);

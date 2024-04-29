@@ -30,9 +30,9 @@ WholeBodyTrajectoryDisplay::WholeBodyTrajectoryDisplay()
       weight_(0.),
       target_enable_(true),
       com_enable_(true),
-      com_axes_enable_(true),
-      contact_enable_(true),
-      contact_axes_enable_(true) {
+      com_axes_enable_(false),
+      contact_enable_(false),
+      contact_axes_enable_(false) {
   // Category Groups
   target_category_ = new rviz::Property("Target", QVariant(), "", this);
   com_category_ = new rviz::Property("Center of Mass", QVariant(), "", this);
@@ -96,7 +96,7 @@ WholeBodyTrajectoryDisplay::WholeBodyTrajectoryDisplay()
   com_alpha_property_->setMax(1);
 
   // End-effector trajectory properties
-  contact_enable_property_ = new BoolProperty("Enable", true, "Enable/disable the Contact display", contact_category_,
+  contact_enable_property_ = new BoolProperty("Enable", false, "Enable/disable the Contact display", contact_category_,
                                               SLOT(updateContactEnable()), this);
   contact_style_property_ =
       new EnumProperty("Line Style", "Billboards", "The rendering operation to use to draw the grid lines.",
@@ -466,19 +466,19 @@ void WholeBodyTrajectoryDisplay::processTargetPosture() {
 
     const whole_body_state_msgs::WholeBodyState &state = msg_->trajectory.back();
     Eigen::VectorXd q = Eigen::VectorXd::Zero(model_.nq);
-    q(3) = state.centroidal.base_orientation.x;
-    q(4) = state.centroidal.base_orientation.y;
-    q(5) = state.centroidal.base_orientation.z;
-    q(6) = state.centroidal.base_orientation.w;
+    // q(3) = state.centroidal.base_orientation.x;
+    // q(4) = state.centroidal.base_orientation.y;
+    // q(5) = state.centroidal.base_orientation.z;
+    // q(6) = state.centroidal.base_orientation.w;
     std::size_t n_joints = state.joints.size();
     for (std::size_t j = 0; j < n_joints; ++j) {
-      pinocchio::JointIndex jointId = model_.getJointId(state.joints[j].name) - 2;
-      q(jointId + 7) = state.joints[j].position;
+      // pinocchio::JointIndex jointId = model_.getJointId(state.joints[j].name) - 2;
+      q(j) = state.joints[j].position;
     }
-    pinocchio::centerOfMass(model_, data_, q);
-    q(0) = state.centroidal.com_position.x - data_.com[0](0);
-    q(1) = state.centroidal.com_position.y - data_.com[0](1);
-    q(2) = state.centroidal.com_position.z - data_.com[0](2);
+    // pinocchio::centerOfMass(model_, data_, q);
+    // q(0) = state.centroidal.com_position.x - data_.com[0](0);
+    // q(1) = state.centroidal.com_position.y - data_.com[0](1);
+    // q(2) = state.centroidal.com_position.z - data_.com[0](2);
     robot_->setPosition(position);
     robot_->setOrientation(orientation);
     robot_->update(PinocchioLinkUpdater(model_, data_, q, boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this)));
@@ -829,7 +829,8 @@ void WholeBodyTrajectoryDisplay::loadRobotModel() {
     return;
   }
   try {
-    pinocchio::urdf::buildModelFromXML(robot_description_, pinocchio::JointModelFreeFlyer(), model_);
+    pinocchio::urdf::buildModelFromXML(robot_description_, model_);
+    // pinocchio::urdf::buildModelFromXML(robot_description_, pinocchio::JointModelFreeFlyer(), model_);
   } catch (const std::invalid_argument &e) {
     std::string error_msg = "Failed to instantiate model: ";
     error_msg += e.what();

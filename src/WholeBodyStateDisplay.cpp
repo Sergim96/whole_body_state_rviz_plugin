@@ -119,18 +119,18 @@ WholeBodyStateDisplay::WholeBodyStateDisplay()
   cop_enable_property_ =
       new BoolProperty("Enable", true, "Enable/disable the CoP display", cop_category_, SLOT(updateCoPEnable()), this);
   cop_enable_status_property_ =
-      new BoolProperty("Use Contact Status", true,
-                       "Use contact status to detect whether a contact is active. "
-                       "Otherwise, the force threshold defined for the support region is used to estimate the status.",
-                       cop_category_, SLOT(updateCoPEnable()), this);
+  new BoolProperty("Use Contact Status", true,
+  "Use contact status to detect whether a contact is active. "
+  "Otherwise, the force threshold defined for the support region is used to estimate the status.",
+  cop_category_, SLOT(updateCoPEnable()), this);
   cop_color_property_ = new rviz::ColorProperty("Color", QColor(204, 41, 204), "Color of a point", cop_category_,
-                                                SLOT(updateCoPColorAndAlpha()), this);
+  SLOT(updateCoPColorAndAlpha()), this);
   cop_alpha_property_ = new rviz::FloatProperty("Alpha", 1.0, "0 is fully transparent, 1.0 is fully opaque.",
-                                                cop_category_, SLOT(updateCoPColorAndAlpha()), this);
+  cop_category_, SLOT(updateCoPColorAndAlpha()), this);
   cop_alpha_property_->setMin(0);
   cop_alpha_property_->setMax(1);
   cop_radius_property_ = new rviz::FloatProperty("Radius", 0.04, "Radius of a point", cop_category_,
-                                                 SLOT(updateCoPColorAndAlpha()), this);
+  SLOT(updateCoPColorAndAlpha()), this);
 
   // Instantaneous Capture Point properties
   icp_enable_property_ =
@@ -321,7 +321,8 @@ void WholeBodyStateDisplay::loadRobotModel() {
 
   // Initializing the dynamics from the URDF model
   try {
-    pinocchio::urdf::buildModelFromXML(robot_model_, pinocchio::JointModelFreeFlyer(), model_);
+    // pinocchio::urdf::buildModelFromXML(robot_model_, pinocchio::JointModelFreeFlyer(), model_);
+    pinocchio::urdf::buildModelFromXML(robot_model_, model_);
   } catch (const std::invalid_argument &e) {
     std::string error_msg = "Failed to instantiate model: ";
     error_msg += e.what();
@@ -626,19 +627,24 @@ void WholeBodyStateDisplay::processWholeBodyState() {
   // Display the robot
   if (robot_enable_) {
     Eigen::VectorXd q = Eigen::VectorXd::Zero(model_.nq);
-    q(3) = msg_->centroidal.base_orientation.x;
-    q(4) = msg_->centroidal.base_orientation.y;
-    q(5) = msg_->centroidal.base_orientation.z;
-    q(6) = msg_->centroidal.base_orientation.w;
+    // q(3) = msg_->centroidal.base_orientation.x;
+    // q(4) = msg_->centroidal.base_orientation.y;
+    // q(5) = msg_->centroidal.base_orientation.z;
+    // q(6) = msg_->centroidal.base_orientation.w;
     std::size_t n_joints = msg_->joints.size();
+    // for (std::size_t j = 0; j < n_joints; ++j) {
+    //   pinocchio::JointIndex jointId = model_.getJointId(msg_->joints[j].name) - 2;
+    //   q(jointId + 7) = msg_->joints[j].position;
+    // }
+    // pinocchio::centerOfMass(model_, data_, q);
+    // q(0) = msg_->centroidal.com_position.x - data_.com[0](0);
+    // q(1) = msg_->centroidal.com_position.y - data_.com[0](1);
+    // q(2) = msg_->centroidal.com_position.z - data_.com[0](2);
     for (std::size_t j = 0; j < n_joints; ++j) {
-      pinocchio::JointIndex jointId = model_.getJointId(msg_->joints[j].name) - 2;
-      q(jointId + 7) = msg_->joints[j].position;
+      // pinocchio::JointIndex jointId = model_.getJointId(msg_->joints[j].name) - 2;
+      q(j) = msg_->joints[j].position;
     }
     pinocchio::centerOfMass(model_, data_, q);
-    q(0) = msg_->centroidal.com_position.x - data_.com[0](0);
-    q(1) = msg_->centroidal.com_position.y - data_.com[0](1);
-    q(2) = msg_->centroidal.com_position.z - data_.com[0](2);
     robot_->setPosition(position);
     robot_->setOrientation(orientation);
     robot_->update(PinocchioLinkUpdater(model_, data_, q, boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this)));
